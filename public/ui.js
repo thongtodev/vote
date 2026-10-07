@@ -1,0 +1,2 @@
+function button(text,label,cls,fn){const b=document.createElement('button');b.type='button';b.textContent=text;b.className=cls;b.setAttribute('aria-label',label);b.title=label;b.addEventListener('click',fn);return b;}
+function field(row,key,label,type='text'){const input=document.createElement('input');input.type=type;input.className='cell';input.value=row[key];input.placeholder=label;input.setAttribute('aria-label',label);input.autocomplete='off';input.spellcheck=false;input.addEventListener('input',()=>{row[key]=input.value;save();tick();});return input;}

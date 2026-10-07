@@ -1,0 +1,10 @@
+export const clone = value => JSON.parse(JSON.stringify(value));
+function fields(row){const out={};for(const key of ['id','mail','pass','recipient','cooldownHours','createdAt'])out[key]=row[key];for(const [key,value] of Object.entries(row.votes||{}))out['votes.'+key]=value;return out;}
+export function diffRows(before,after){
+ const previous=new Map(before.map(r=>[r.id,r])),next=new Map(after.map(r=>[r.id,r])),changes=new Map();
+ for(const [id,row] of next){const old=previous.get(id);if(!old){changes.set(id,{put:clone(row)});continue;}const a=fields(old),b=fields(row),set={},remove=[];for(const key of Object.keys(b))if(a[key]!==b[key])set[key]=b[key];for(const key of Object.keys(a))if(!(key in b))remove.push(key);if(Object.keys(set).length||remove.length)changes.set(id,{set,remove});}
+ for(const id of previous.keys())if(!next.has(id))changes.set(id,{deleted:true});return changes;
+}
+function patch(row,change){const out=clone(row);for(const [key,value] of Object.entries(change.set||{})){if(key.startsWith('votes.'))out.votes[key.slice(6)]=value;else out[key]=value;}for(const key of change.remove||[]){if(key.startsWith('votes.'))delete out.votes[key.slice(6)];else delete out[key];}return out;}
+export function applyChanges(rows,changes){const out=new Map(rows.map(r=>[r.id,clone(r)]));for(const [id,c] of changes){if(c.deleted)out.delete(id);else if(c.put)out.set(id,clone(c.put));else if(out.has(id))out.set(id,patch(out.get(id),c));}return [...out.values()];}
+export function mergeChanges(older,newer){const result=new Map(older);for(const [id,c] of newer){const old=result.get(id);if(!old||c.deleted||c.put){result.set(id,clone(c));continue;}if(old.put){result.set(id,{put:patch(old.put,c)});continue;}if(old.deleted){result.set(id,clone(c));continue;}const set={...old.set,...c.set},remove=new Set(old.remove);for(const key of Object.keys(c.set||{}))remove.delete(key);for(const key of c.remove||[]){delete set[key];remove.add(key);}result.set(id,{set,remove:[...remove]});}return result;}
