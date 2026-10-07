@@ -1,8 +1,9 @@
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/12.19.0/firebase-app.js';
 import { getAuth, signInAnonymously } from 'https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js';
-import { getFirestore, doc, collection, runTransaction, onSnapshot, writeBatch, deleteField } from 'https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js';
+import { getFirestore, doc, collection, runTransaction, onSnapshot, writeBatch, deleteField, getDoc, getDocs, setDoc } from 'https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js';
 import { firebaseConfig } from './firebase-config.js';
 import { clone, diffRows, applyChanges, mergeChanges } from './sync-core.js';
+import { initialRows } from './seed-data.js';
 const ui=window.VoteApp;
 let db,boardId,boardDay,remote=[],baseline=[],pending=new Map(),inflight=new Map(),timer=null,busy=false,failed=false,ready=false;
 function status(text){ui.status(text);}
@@ -41,6 +42,18 @@ async function start(){
   });
   // All devices use the same board; old private link fragments do not select data.
   history.replaceState(null,'',location.pathname+location.search);
+  // Import the attached Excel table once. Existing rows keep their current values.
+  try{
+   const markerRef=doc(db,'voteBoards',boardId,'meta','excel-import-v1');
+   let marked=false;try{marked=(await getDoc(markerRef)).exists();}catch(error){console.warn('Excel seed marker unavailable',error);}
+   if(!marked){
+    const existing=await getDocs(collection(db,'voteBoards',boardId,'rows'));
+    const ids=new Set(existing.docs.map(item=>item.id));
+    const missing=initialRows.filter(row=>!ids.has(row.id));
+    if(missing.length){const seedBatch=writeBatch(db);for(const row of missing)seedBatch.set(doc(db,'voteBoards',boardId,'rows',row.id),row);await seedBatch.commit();}
+    try{await setDoc(markerRef,{version:'excel-import-v1',count:initialRows.length,added:missing.length,createdAt:Date.now()});}catch(error){console.warn('Excel seed marker not saved',error);}
+   }
+  }catch(error){console.warn('Excel seed skipped',error);}
   onSnapshot(collection(db,'voteBoards',boardId,'rows'),snapshot=>{
    remote=snapshot.docs.map(d=>({...d.data(),id:d.id}));
    if(!ready){ready=true;ui.ready(true);}applyVisible();if(!hasChanges()&&!failed)status('Đã đồng bộ Firebase');

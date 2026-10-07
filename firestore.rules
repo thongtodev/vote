@@ -24,6 +24,16 @@ service cloud.firestore {
           && request.resource.data.inviteKey == get(/databases/$(database)/documents/voteBoards/$(board)).data.inviteKey;
         allow list, update, delete: if false;
       }
+      match /meta/{docId} {
+        allow read: if member(board);
+        allow create, update: if member(board)
+          && request.resource.data.keys().hasOnly(['version','count','added','createdAt'])
+          && request.resource.data.version is string
+          && request.resource.data.count is number
+          && request.resource.data.added is number
+          && request.resource.data.createdAt is number;
+        allow delete: if false;
+      }
       match /rows/{rowId} {
         allow read: if member(board);
         allow create, update: if member(board)
