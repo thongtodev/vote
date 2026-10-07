@@ -26,8 +26,8 @@ function render(){
   recipient.addEventListener('change',()=>{collapsedGroups.delete(recipientKey(row.recipient));saveGroups();setTimeout(render,0);});
   cell().append(recipient);
   const hoursCell=cell();const hours=document.createElement('input');hours.type='number';hours.className='cell time';hours.min='0.01';hours.max='8760';hours.step='any';hours.value=row.cooldownHours;hours.setAttribute('aria-label','Số giờ chờ của tài khoản');
-  const hoursHint=document.createElement('small');hoursHint.className='due';hoursHint.textContent='giờ · ví dụ: 12, 15, 24';
-  hours.addEventListener('input',()=>{const value=hours.valueAsNumber;if(!validHours(value)){hours.setCustomValidity('Nhập số giờ lớn hơn 0 và không quá 8760.');hoursHint.textContent='Nhập số > 0, tối đa 8760 giờ';hoursHint.style.color='#a36725';return;}hours.setCustomValidity('');hoursHint.textContent='giờ · tính từ lần vote mới nhất';hoursHint.style.color='';row.cooldownHours=value;save();tick();});
+  const hoursHint=document.createElement('small');hoursHint.className='due';hoursHint.textContent='giờ';
+  hours.addEventListener('input',()=>{const value=hours.valueAsNumber;if(!validHours(value)){hours.setCustomValidity('Nhập số giờ lớn hơn 0 và không quá 8760.');hoursHint.textContent='Nhập số > 0, tối đa 8760 giờ';hoursHint.style.color='#a36725';return;}hours.setCustomValidity('');hoursHint.textContent='giờ';hoursHint.style.color='';row.cooldownHours=value;save();tick();});
   hours.addEventListener('blur',()=>{if(!validHours(hours.valueAsNumber)){hours.value=row.cooldownHours;hours.setCustomValidity('');hoursHint.textContent='Đã giữ mức '+row.cooldownHours+' giờ';hoursHint.style.color='';}});
   hoursCell.append(hours,hoursHint);
   for(const day of days){

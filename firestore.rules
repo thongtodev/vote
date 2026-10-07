@@ -3,7 +3,7 @@ service cloud.firestore {
   match /databases/{database}/documents {
     function signedIn() { return request.auth != null; }
     function member(board) {
-      return signedIn() && exists(/databases/$(database)/documents/voteBoards/$(board)/members/$(request.auth.uid));
+      return signedIn() && (board == 'shared-vote-board-global' || exists(/databases/$(database)/documents/voteBoards/$(board)/members/$(request.auth.uid)));
     }
     match /voteBoards/{board} {
       allow create: if signedIn()
